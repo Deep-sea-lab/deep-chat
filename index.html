@@ -1,0 +1,203 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>深海聊天室</title>
+    <!-- 添加 favicon -->
+    <link rel="icon" type="image/png" href="https://blog.deep-sea.dpdns.org/images/logo/favicon-256x256.webp">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        .server-message { background-color: #e6f3ff; }
+        .error-message { background-color: #ffe6e6; }
+        .system-message { background-color: #f0f0f0; }
+        .avatar { width: 40px; height: 40px; border-radius: 50%; object-fit: cover; }
+        /* 添加深海背景 */
+        body {
+            background-image: url('https://cx-mc-image.netlify.app/16.jpg');
+            background-size: cover;
+            background-position: center;
+            background-attachment: fixed;
+            background-repeat: no-repeat;
+        }
+        /* 半透明背景使聊天框更清晰 */
+        .chat-container {
+            background-color: rgba(255, 255, 255, 0.9);
+        }
+    </style>
+</head>
+<body class="flex items-center justify-center min-h-screen">
+    <div class="w-full max-w-2xl p-6 rounded-lg shadow-lg chat-container">
+        <h1 class="text-2xl font-bold text-center mb-4 text-blue-900">💬 深海聊天室</h1>
+        <div id="connectionStatus" class="text-sm text-gray-600 mb-4">
+            🔌 连接状态: 未连接
+        </div>
+        <div class="mb-4">
+            <h2 class="text-lg font-semibold mb-2 text-blue-800">💬 聊天记录</h2>
+            <div id="messages" class="h-96 overflow-y-auto border p-4 rounded bg-gray-50"></div>
+        </div>
+        <div class="flex items-center space-x-2">
+            <img id="userAvatar" class="avatar" alt="User Avatar">
+            <span id="userNickname" class="font-semibold text-blue-900"></span>
+            <input
+                type="text"
+                id="messageInput"
+                placeholder="输入消息..."
+                class="flex-1 p-2 border rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
+            />
+            <button
+                onclick="sendMessage()"
+                class="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600"
+            >
+                📤 发送
+            </button>
+        </div>
+    </div>
+
+    <script>
+        // Expanded nickname pool
+        const nicknames = [
+            'StarGazer', 'MoonWalker', 'SkyDiver', 'CloudChaser', 'DreamCatcher',
+            'NightOwl', 'SunRiser', 'StarDrifter', 'CosmicVoyager', 'LunarTide',
+            'GalaxyRider', 'NebulaNinja', 'AstroBlaze', 'MeteorMaverick', 'OrbitSeeker',
+            'CometCruiser', 'SolarFlare', 'StellarWanderer', 'EclipseHunter', 'NovaKnight',
+            'TwilightScout', 'AuroraDancer', 'StarlightSage', 'CosmoWizard', 'SkySorcerer',
+            'MoonlitMonk', 'GalacticGuru', 'NebulaNomad', 'AstroAlchemist', 'OrbitOracle',
+            'CelestialSeer', 'LunarLad', 'SolarSentry', 'StarshipScribe', 'MeteorMage',
+            'CometCaller', 'NovaNavigator', 'EclipseEmissary', 'StellarStrider', 'SkySculptor',
+            'VoidVanguard', 'CosmicCrusader', 'AstralArcher', 'PulsarPilot', 'QuasarQuest',
+            'StarbornSentry', 'NebulaNavigator', 'GalacticGlider', 'LunarLancer', 'SolarSpecter',
+            'MeteorMonarch', 'OrbitOutlaw', 'CometConqueror', 'NovaNighthawk', 'EclipseEnigma',
+            'StellarStorm', 'SkySovereign', 'MoonshadowMystic', 'AstroAdventurer', 'CosmoChampion',
+            'TwilightTinker', 'AuroraAvenger', 'StarlightSorcerer', 'NebulaKnight', 'GalacticGuardian',
+            'LunarLegend', 'SolarSage', 'MeteorMariner', 'OrbitOdyssey', 'CometCaptain',
+            'NovaNexus', 'EclipseExplorer', 'StellarSeeker', 'SkyShaman', 'MoonbeamMarauder',
+            'AstralAssassin', 'CosmicCorsair', 'PulsarPioneer', 'QuasarQuester', 'StarforgeSmith',
+            'NebulaNoble', 'GalacticGambit', 'LunarLorekeeper', 'SolarStrider', 'MeteorMystic',
+            'OrbitOverlord', 'CometCzar', 'NovaNomad', 'EclipseElder', 'StellarSculptor',
+            'SkySpellbinder', 'MoonlitMaestro', 'AstroArbiter', 'CosmoConqueror', 'TwilightTrailblazer'
+        ];
+
+        // Load used nicknames from local storage or initialize empty array
+        let usedNicknames = JSON.parse(localStorage.getItem('usedNicknames') || '[]');
+
+        // Select a unique nickname
+        let availableNicknames = nicknames.filter(n => !usedNicknames.includes(n));
+        if (availableNicknames.length === 0) {
+            // Reset used nicknames if all are taken
+            usedNicknames = [];
+            availableNicknames = nicknames;
+        }
+        const randomNickname = availableNicknames[Math.floor(Math.random() * availableNicknames.length)];
+        
+        // Add selected nickname to used list and save to local storage
+        usedNicknames.push(randomNickname);
+        localStorage.setItem('usedNicknames', JSON.stringify(usedNicknames));
+
+        // Generate avatar for local user using UI Avatars API
+        const localAvatarUrl = `https://ui-avatars.com/api/?name=${encodeURIComponent(randomNickname)}&size=64&rounded=true&background=random`;
+
+        document.getElementById('userAvatar').src = localAvatarUrl;
+        document.getElementById('userNickname').textContent = randomNickname;
+
+        const socket = new WebSocket("ws://deep-chat-server.deno.dev");
+        const messagesDiv = document.getElementById("messages");
+        const statusDiv = document.getElementById("connectionStatus");
+
+        socket.onopen = function () {
+            console.log("🎉 连接已建立");
+            statusDiv.textContent = "✅ 连接状态: 已连接";
+            statusDiv.classList.add("text-green-600");
+            addMessage(`${randomNickname}: 连接成功`, "system-message", localAvatarUrl);
+            socket.send(`${randomNickname}: 加入了聊天室`);
+        };
+
+        socket.onmessage = function (event) {
+            // Remove the "💬 服务器: 用户发送了 " prefix from server messages
+            let message = event.data.toString();
+            const prefix = "💬 服务器: 用户发送了 ";
+            if (message.startsWith(prefix)) {
+                message = message.slice(prefix.length);
+            }
+            // Extract nickname from message (format: "Nickname: message")
+            const nickname = message.split(':')[0].trim();
+            // Generate avatar URL for the sender's nickname
+            const senderAvatarUrl = `https://ui-avatars.com/api/?name=${encodeURIComponent(nickname)}&size=64&rounded=true&background=random`;
+            addMessage(message, "server-message", senderAvatarUrl);
+        };
+
+        socket.onclose = function (event) {
+            const message = event.wasClean
+                ? `${randomNickname}: 连接已正常关闭`
+                : `${randomNickname}: 连接异常关闭`;
+            console.log(message);
+            console.log(`Code: ${event.code} Reason: ${event.reason}`);
+            statusDiv.textContent = "🔌 连接状态: 未连接";
+            statusDiv.classList.remove("text-green-600");
+            statusDiv.classList.add("text-red-600");
+            addMessage(message, "error-message", localAvatarUrl);
+        };
+
+        socket.onerror = function (error) {
+            console.error("🚨 WebSocket错误: ", error);
+            addMessage(`${randomNickname}: 连接错误`, "error-message", localAvatarUrl);
+        };
+
+        function sendMessage() {
+            const input = document.getElementById("messageInput");
+            const message = input.value.trim();
+            if (!message) {
+                addMessage(`${randomNickname}: 消息不能为空`, "error-message", localAvatarUrl);
+                return;
+            }
+            if (socket.readyState !== WebSocket.OPEN) {
+                addMessage(`${randomNickname}: 未连接到服务器`, "error-message", localAvatarUrl);
+                return;
+            }
+            socket.send(`${randomNickname}: ${message}`);
+            input.value = "";
+        }
+
+        function addMessage(text, className, avatarSrc) {
+            const messageDiv = document.createElement("div");
+            messageDiv.className = `flex items-start space-x-2 p-2 rounded mb-2 ${className}`;
+    
+            const avatarImg = document.createElement("img");
+            avatarImg.src = avatarSrc;
+            avatarImg.className = "avatar";
+            avatarImg.alt = "Avatar";
+            messageDiv.appendChild(avatarImg);
+
+            const textSpan = document.createElement("span");
+            textSpan.textContent = text; // 先添加消息文本
+
+            // 获取当前时间并格式化为 "YYYY-MM-DD HH:MM"
+            const now = new Date();
+            const year = now.getFullYear();
+            const month = String(now.getMonth() + 1).padStart(2, '0'); // 月份从0开始，所以加1
+            const day = String(now.getDate()).padStart(2, '0');
+            const hours = String(now.getHours()).padStart(2, '0');
+            const minutes = String(now.getMinutes()).padStart(2, '0');
+
+            const timeStamp = `(${year}-${month}-${day} ${hours}:${minutes})`; // 格式化时间戳
+
+            const timeSpan = document.createElement("span");
+            timeSpan.className = "text-xs text-gray-500 ml-2"; // 添加样式，使时间不显得过于突出
+            timeSpan.textContent = timeStamp; // 将格式化的时间戳添加到时间span中
+
+            // 将时间戳添加到消息文本后
+            messageDiv.appendChild(textSpan);
+            messageDiv.appendChild(timeSpan);
+
+            messagesDiv.appendChild(messageDiv);
+            messagesDiv.scrollTop = messagesDiv.scrollHeight; // 保持消息框滚动到最新位置
+        }
+
+        document.getElementById("messageInput").addEventListener("keypress", (e) => {
+            if (e.key === "Enter") {
+                sendMessage();
+            }
+        });
+    </script>
+</body>
+</html>
