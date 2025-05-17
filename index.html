@@ -100,7 +100,7 @@
         document.getElementById('userAvatar').src = localAvatarUrl;
         document.getElementById('userNickname').textContent = randomNickname;
 
-        const socket = new WebSocket("ws://deep-chat-server.deno.dev");
+        const socket = new WebSocket("wss://deep-chat-server.deno.dev");
         const messagesDiv = document.getElementById("messages");
         const statusDiv = document.getElementById("connectionStatus");
 
