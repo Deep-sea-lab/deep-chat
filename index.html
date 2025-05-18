@@ -196,7 +196,7 @@
 
         // Setup WebSocket with retry
         function setupWebSocket(user) {
-            socket = new WebSocket('ws://127.0.0.1:3008');
+            socket = new WebSocket('wss://deep-chat-server.deno.dev');
             
             socket.onopen = () => {
                 console.log('🎉 连接已建立');
